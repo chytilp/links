@@ -1,2 +1,2 @@
 # links
-app for sharing interestring links
+app for sharing interesting links
