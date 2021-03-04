@@ -134,6 +134,7 @@ func (h *LinkHandler) handleDelete(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
+
 	_, err = links.Delete(int(id))
 	if err != nil {
 		return err
