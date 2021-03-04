@@ -129,13 +129,12 @@ func (h *LinkHandler) handleDelete(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	link := &model.Link{}
 	links := &datalayer.Links{}
-	link, err = links.Get(int(id))
+	link, err := links.Get(int(id))
 	if err != nil {
 		return err
 	}
-	id, err = links.Delete(int(id))
+	_, err = links.Delete(int(id))
 	if err != nil {
 		return err
 	}
