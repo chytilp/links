@@ -1,0 +1,5 @@
+api:
+
+user - get_all, get_1, save, delete=deactivate -> save uklada i role, kdyz se poslou
+role - get_all, get_1, save, delete=deactivate -> uklada jen roli, vraci i usery roli
+user_role - save, delete

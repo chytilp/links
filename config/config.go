@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/chytilp/links/logging"
+	"github.com/chytilp/links/utils"
 )
 
 // ConfigFile is the default environment variable the points to the config file.
@@ -36,7 +37,8 @@ func (d *DbConfig) GetConnectionString() string {
 // init func loads and returns the config loaded from environment.
 func init() {
 	App = &Config{}
-	if _, err := toml.DecodeFile(ConfigFile, App); err != nil {
+	configPath := utils.RootDir() + ConfigFile
+	if _, err := toml.DecodeFile(configPath, App); err != nil {
 		logging.L.Error("Error from read config.toml file. err: %s", err)
 		fmt.Println(err)
 		return

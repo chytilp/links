@@ -2,6 +2,5 @@
 address = "localhost"
 port = 3306
 user = "root"
-password = "xxxx"
+password = "rootpass"
 database = "links"
-

@@ -1,6 +1,6 @@
 module github.com/chytilp/links
 
-go 1.12
+go 1.15
 
 require (
     github.com/BurntSushi/toml

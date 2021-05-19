@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/chytilp/links/datalayer"
 	"github.com/chytilp/links/model"
@@ -44,7 +44,8 @@ func (h *LinkHandler) handleGet(w http.ResponseWriter, r *http.Request) error {
 		outErr := fmt.Errorf("Path parameter wrong type, value: %s . Error: %s", urlPath, err)
 		prepareResponseFromError(w, outErr, 404)
 	}
-	links := &datalayer.Links{}
+	links := datalayer.CreateLinks(nil)
+	defer links.Close()
 	link, err := links.Get(int(id))
 	if err != nil {
 		outErr := fmt.Errorf("Link with id=%d was not found. Error: %s", id, err)
@@ -58,18 +59,16 @@ func (h *LinkHandler) handleGet(w http.ResponseWriter, r *http.Request) error {
 
 func (h *LinkHandler) handleRetrieve(w http.ResponseWriter, r *http.Request) error {
 	queryParams := r.URL.Query()
-	var buffer bytes.Buffer
-	for k, v := range queryParams {
-		buffer.WriteString(fmt.Sprintf("%s = %s,", k, v))
+	links := datalayer.CreateLinks(nil)
+	defer links.Close()
+	foundLinks, err := links.Retrieve(queryParams)
+	if err != nil {
+		return err
 	}
-	links := &datalayer.Links{}
-	foundLinks := make([]*model.Link, 0, 5)
-	filters := make(map[string]string)
-	foundLinks, err := links.Retrieve(filters)
-	content := make(map[string]string)
+	content := make([]string, len(foundLinks))
 	for index, link := range foundLinks {
 		bytes, _ := json.Marshal(link)
-		content["result_"+string(index)] = string(bytes)
+		content[index] = string(bytes)
 	}
 	output, err := json.Marshal(content)
 	if err != nil {
@@ -82,18 +81,28 @@ func (h *LinkHandler) handleRetrieve(w http.ResponseWriter, r *http.Request) err
 }
 
 func (h *LinkHandler) handlePost(w http.ResponseWriter, r *http.Request) error {
+	err := h.processSave(w, r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *LinkHandler) processSave(w http.ResponseWriter, r *http.Request) error {
 	len := r.ContentLength
 	body := make([]byte, len)
 	r.Body.Read(body)
 	var link model.Link
 	json.Unmarshal(body, &link)
-	links := &datalayer.Links{}
-	id, err := links.Save(link)
+	links := datalayer.CreateLinks(nil)
+	defer links.Close()
+	var outLink *model.Link
+	outLink, err := links.Save(link)
 	if err != nil {
 		return err
 	}
 	idmap := make(map[string]int)
-	idmap["id"] = id
+	idmap["id"] = outLink.ID
 	output, err := json.Marshal(idmap)
 	if err != nil {
 		return err
@@ -105,22 +114,10 @@ func (h *LinkHandler) handlePost(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *LinkHandler) handlePut(w http.ResponseWriter, r *http.Request) error {
-	len := r.ContentLength
-	body := make([]byte, len)
-	r.Body.Read(body)
-	var link model.Link
-	json.Unmarshal(body, &link)
-	links := &datalayer.Links{}
-	id, err := links.Save(link)
+	err := h.processSave(w, r)
 	if err != nil {
 		return err
 	}
-	idmap := make(map[string]int)
-	idmap["id"] = id
-	output, _ := json.Marshal(idmap)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(output)
 	return nil
 }
 
@@ -129,13 +126,14 @@ func (h *LinkHandler) handleDelete(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	links := &datalayer.Links{}
+	links := datalayer.CreateLinks(nil)
+	defer links.Close()
 	link, err := links.Get(int(id))
 	if err != nil {
 		return err
 	}
-
-	_, err = links.Delete(int(id))
+	now := time.Now()
+	_, err = links.Delete(int(id), now)
 	if err != nil {
 		return err
 	}
